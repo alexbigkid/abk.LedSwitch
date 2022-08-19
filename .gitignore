@@ -59,3 +59,6 @@ build/**
 
 # device certificates
 certs/**
+
+# private variable settings
+*.envrc

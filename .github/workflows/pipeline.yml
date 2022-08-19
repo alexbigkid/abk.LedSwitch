@@ -3,7 +3,7 @@ name: qwk.ledSwitch
 on:
     push:
         branches:
-            - main
+            - master
 
 env:
     ENV: dev

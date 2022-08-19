@@ -199,7 +199,7 @@ echo
 echo "-> $0 ($@)"
 
 DateAndTimeInfo
-BuildInfo
+# BuildInfo
 NumberOfProcessingCores
 AgentHwInfo
 CurrentDirectoryInfo

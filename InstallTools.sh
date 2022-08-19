@@ -120,7 +120,7 @@ echo "-> $0 ($@)"
 
 InstallRequiredToolsUsingBrew || exit $?
 # InstallRequiredToolsUsingPip || exit $?
-InstallCeedlingGem || exit $?
+# InstallCeedlingGem || exit $?
 # InstallRequiredToolsUsingNpm || exit $?
 
 echo "<- $0 (0)"

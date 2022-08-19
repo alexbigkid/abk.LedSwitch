@@ -44,8 +44,8 @@ export PATH=$HOME/$USER_GEM_PATH:$PATH
 # ceedling writes to the error stream causing pipeline to fail
 export RUBYOPT='-W:no-deprecated'
 
-RunCeedlingUnitTests || exit $?
-RunCeedlingCoverage || exit $?
+# RunCeedlingUnitTests || exit $?
+# RunCeedlingCoverage || exit $?
 # CreateAndOpenCoverageHtmlPage || exit $?
 
 echo "<- $0 (0)"

@@ -1,43 +1,24 @@
-trigger:
-- main
+name: qwk.ledSwitch
 
-stages:
+on:
+    push:
+        branches:
+            - main
 
-- stage: qwkLedSwitch_dev
-  jobs:
-  - job: LPS_dev
-    pool:
-      vmImage: 'ubuntu-latest'
-    #   vmImage: 'macOS-latest'
-    variables:
-      ENV: dev
-      USER_GEM_PATH: '.gem/ruby/2.7.0/bin'
-    continueOnError: 'false'
-    steps:
-    - task: Bash@3
-      displayName: 'Agent Info'
-      inputs:
-        filePath: './AgentInfo.sh'
-      env:
-        BUILD_ID: $(Build.BuildId)
-        BUILD_NUMBER: $(Build.BuildNumber)
-    - task: Bash@3
-      displayName: 'Install Tools'
-      inputs:
-        filePath: './InstallTools.sh'
-      env:
-        USER_GEM_PATH: $(USER_GEM_PATH)
-    - task: Bash@3
-      displayName: 'UnitTest PowerSwitch'
-      inputs:
-        filePath: './RunUnitTests.sh'
-        failOnStderr: true
-      env:
-        USER_GEM_PATH: $(USER_GEM_PATH)
-    # - task: Bash@3
-    #   displayName: 'Compile binary dev'
-    #   inputs:
-    #     filePath: './LPSBinary.sh'
-    #     failOnStderr: true
-    #   env:
-    #     ENV: $(env)
+env:
+    ENV: dev
+
+jobs:
+    qwkLedSwitch_dev:
+        name: Run on ubuntu-latest
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: checkingout repo
+              uses: actions/checkout@v2
+            - name: Agent Info
+              run: ./AgentInfo.sh
+            - name: Install Tools
+              run: ./InstallTools.sh
+            - name: Unit Test LED Switch
+              run: ./RunUnitTests.sh

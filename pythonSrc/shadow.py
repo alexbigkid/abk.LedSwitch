@@ -12,6 +12,7 @@ import threading
 import traceback
 from uuid import uuid4
 import logging
+from colorama import Fore, Style
 
 HARDWARD_CONFIGURED = True
 if HARDWARD_CONFIGURED:

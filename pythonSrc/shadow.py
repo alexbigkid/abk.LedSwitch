@@ -12,7 +12,7 @@ import threading
 import traceback
 from uuid import uuid4
 
-HARDWARD_CONFIGURED = True 
+HARDWARD_CONFIGURED = True
 if HARDWARD_CONFIGURED:
     from rpLedSwitch import setup, turn_on, turn_off, destroy
 
@@ -70,6 +70,24 @@ thing_name = ""
 shadow_property = ""
 
 SHADOW_VALUE_DEFAULT = "off"
+SWITCH_ON_SET = {"ON", "on", "1"}
+SWITCH_OFF_SET = {"OFF", "off", "0"}
+ACCEPTABLE_SHADOW_SWITCH_VALUE_SET = SWITCH_ON_SET.union(SWITCH_OFF_SET)
+
+
+def function_trace(original_function):
+    """Decorator function to help to trace function call entry and exit
+    Args:
+        original_function (_type_): function above which the decorater is defined
+    """
+    def function_wrapper(*args, **kwargs):
+        _logger = logging.getLogger(original_function.__name__)
+        _logger.debug(f'{Fore.YELLOW}-> {original_function.__name__}{Style.RESET_ALL}')
+        result = original_function(*args, **kwargs)
+        _logger.debug(f'{Fore.YELLOW}<- {original_function.__name__}{Style.RESET_ALL}\n')
+        return result
+    return function_wrapper
+
 
 class LockedData(object):
     def __init__(self):
@@ -78,6 +96,7 @@ class LockedData(object):
         self.disconnect_called = False
 
 locked_data = LockedData()
+
 
 # Function for gracefully quitting this sample
 def exit(msg_or_exception):
@@ -100,6 +119,7 @@ def exit(msg_or_exception):
             future = mqtt_connection.disconnect()
             future.add_done_callback(on_disconnected)
 
+
 def on_disconnected(disconnect_future):
     # type: (Future) -> None
     print("Disconnected.")
@@ -121,28 +141,29 @@ def on_get_shadow_accepted(response):
         if response.state:
             if response.state.delta:
                 value = response.state.delta.get(shadow_property)
-                if value:
+                if value and value in ACCEPTABLE_SHADOW_SWITCH_VALUE_SET:
                     print("  Shadow contains delta value '{}'.".format(value))
                     change_shadow_value(value)
                     return
 
             if response.state.reported:
                 value = response.state.reported.get(shadow_property)
-                if value:
+                if value and value in ACCEPTABLE_SHADOW_SWITCH_VALUE_SET:
                     print("  Shadow contains reported value '{}'.".format(value))
-                    if value == "ON" and HARDWARD_CONFIGURED:
+                    if value in SWITCH_ON_SET and HARDWARD_CONFIGURED:
                         turn_on()
-                    if value == "OFF" and HARDWARD_CONFIGURED:
+                    if value in SWITCH_OFF_SET and HARDWARD_CONFIGURED:
                         turn_off()
                     set_local_value_due_to_initial_query(response.state.reported[shadow_property])
                     return
 
-        print("  Shadow document lacks '{}' property. Setting defaults...".format(shadow_property))
+        print("  Shadow document is missing '{}' property. Setting defaults...".format(shadow_property))
         change_shadow_value(SHADOW_VALUE_DEFAULT)
         return
 
     except Exception as e:
         exit(e)
+
 
 def on_get_shadow_rejected(error):
     # type: (iotshadow.ErrorResponse) -> None
@@ -152,6 +173,7 @@ def on_get_shadow_rejected(error):
     else:
         exit("Get request was rejected. code:{} message:'{}'".format(
             error.code, error.message))
+
 
 def on_shadow_delta_updated(delta):
     # type: (iotshadow.ShadowDeltaUpdatedEvent) -> None
@@ -163,14 +185,18 @@ def on_shadow_delta_updated(delta):
                 print("  Delta reports that '{}' was deleted. Resetting defaults...".format(shadow_property))
                 change_shadow_value(SHADOW_VALUE_DEFAULT)
                 return
-            else:
+            if value in ACCEPTABLE_SHADOW_SWITCH_VALUE_SET:
                 print("  Delta reports that desired value is '{}'. Changing local value...".format(value))
                 change_shadow_value(value)
+            else:
+                print("  Shadow filed '{}' is trying to set to an invalid value: '{}'.".format(shadow_property, value))
+
         else:
             print("  Delta did not report a change in '{}'".format(shadow_property))
 
     except Exception as e:
         exit(e)
+
 
 def on_publish_update_shadow(future):
     #type: (Future) -> None
@@ -181,30 +207,34 @@ def on_publish_update_shadow(future):
         print("Failed to publish update request.")
         exit(e)
 
+
 def on_update_shadow_accepted(response):
     # type: (iotshadow.UpdateShadowResponse) -> None
     try:
         print("Finished updating reported shadow value to '{}'.".format(response.state.desired[shadow_property])) # type: ignore
-        if response.state.desired[shadow_property] == 'ON' and HARDWARD_CONFIGURED:
+        if response.state.desired[shadow_property] in SWITCH_ON_SET and HARDWARD_CONFIGURED:
             turn_on()
-        if response.state.desired[shadow_property] == 'OFF' and HARDWARD_CONFIGURED:
+        if response.state.desired[shadow_property] in SWITCH_OFF_SET and HARDWARD_CONFIGURED:
             turn_off()
         print("Enter desired value: ") # remind user they can input new values
     except:
         exit("Updated shadow is missing the target property.")
+
 
 def on_update_shadow_rejected(error):
     # type: (iotshadow.ErrorResponse) -> None
     exit("Update request was rejected. code:{} message:'{}'".format(
         error.code, error.message))
 
+
 def set_local_value_due_to_initial_query(reported_value):
     with locked_data.lock:
         locked_data.shadow_value = reported_value
     print("Enter desired value: ") # remind user they can input new values
 
+
+@function_trace
 def change_shadow_value(value):
-    print("-> change_shadow_value")
     with locked_data.lock:
         if locked_data.shadow_value == value:
             print("Local value is already '{}'.".format(value))
@@ -224,7 +254,7 @@ def change_shadow_value(value):
     )
     future = shadow_client.publish_update_shadow(request, mqtt.QoS.AT_LEAST_ONCE)
     future.add_done_callback(on_publish_update_shadow)
-    print("<- change_shadow_value")
+
 
 def user_input_thread_fn():
     while True:
@@ -247,6 +277,7 @@ def user_input_thread_fn():
             print("Exception on input thread.")
             exit(e)
             break
+
 
 if __name__ == '__main__':
     # Process input args

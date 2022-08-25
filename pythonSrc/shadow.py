@@ -11,6 +11,7 @@ import sys
 import threading
 import traceback
 from uuid import uuid4
+import logging
 
 HARDWARD_CONFIGURED = True
 if HARDWARD_CONFIGURED:

@@ -1,4 +1,4 @@
-name: qwk.ledSwitch
+name: abk.ledSwitch
 
 on:
     push:
@@ -9,7 +9,7 @@ env:
     ENV: dev
 
 jobs:
-    qwkLedSwitch_dev:
+    abkLedSwitch_dev:
         name: Run on ubuntu-latest
         runs-on: ubuntu-latest
 
